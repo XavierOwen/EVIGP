@@ -1,0 +1,5 @@
+install.packages("lhs")
+install.packages("GPfit")
+install.packages("abind")
+install.packages("laGP")
+install.packages("mlegp")
