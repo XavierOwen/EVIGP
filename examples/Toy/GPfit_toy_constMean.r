@@ -10,7 +10,7 @@ upper<-10.
 
 p<-1
 m<-100
-n<-20
+n<-11
 
 ## Training data
 xx<-maximinLHS(n,p)
@@ -29,7 +29,9 @@ result_rmspe_sd = numeric(100)
 
 for (i in 1:100) {
     x.new<-randomLHS(m,p)
-    new <-lower+x.new*(upper-lower)
+    new<-matrix(0,ncol=p,nrow=m)
+    for (j in 1:m)
+        new[j,]<-lower+x.new[j,]*(upper-lower)
     truey<-new[,1]*sin(new[,1])
     pred_g <-predict(fit_g,xnew=x.new)
     RMSPE_sd_g <- sqrt(mean((pred_g$Y_hat-truey)^2))/sd(truey) 

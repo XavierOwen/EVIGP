@@ -49,6 +49,14 @@ parser.add_argument('--h', type=float, help='kernel bandwidth used in EVI', defa
 # cross-fold params
 parser.add_argument('--fold_num', type=int, help='fold number used in cross validation', default=5)
 
+parser.add_argument(
+  "--selected_effects",  # name on the CLI - drop the `--` for positional/required parameters
+  nargs="*",  # 0 or more values expected => creates a list
+  type=int,
+  help='index for the effects selected, starting from zero, input them like: 0 6 8 10',
+  default=[0,2,22],  # default if intercept, x2 and x2^2
+)
+
 args = parser.parse_args()
 
 N = args.N
@@ -58,6 +66,7 @@ N_particle = args.N_particle
 TAU = args.TAU
 h = torch.tensor(1)*args.h
 fold_num = args.fold_num
+selected_effects = args.selected_effects
 
 # parameters for priors
 a_omega = np.ones((8,2))
@@ -67,12 +76,13 @@ a_2 = 4
 
 x,y = data_generator(N,epsilon)
 G = Calc_G(x)
+G = G[:,selected_effects]
 dimx = x.shape[-1]  # Dimension of x_i
 Dim_particles = dimx + 1 
 
 R_diag = torch.ones(G.shape[1])
-R_diag[1:]      *=1/3
-R_diag[dimx+1:] *=1/3
+R_diag[1:]      /=1/3
+R_diag[dimx+1:] /=1/3
 R_inv = torch.diag(1/R_diag)
 
 
@@ -140,7 +150,8 @@ def mainFunc(nu,foldnum):
     out1 = []
     for curr_x in test_x:
         curr_x = curr_x.view((1,dimx))
-        m, _ = handle_prediction(curr_x, Calc_G(curr_x), Xn, train_y, train_G, omega, eta)
+        curr_G = Calc_G(curr_x)
+        m, _ = handle_prediction(curr_x, curr_G[:,selected_effects], Xn, train_y, train_G, omega, eta)
         out1.append(m[0][0].detach())
     pred_y = torch.tensor(out1).view((N_test,1))
     output_rmspe = rmspe_sd(pred_y,test_y)
@@ -169,7 +180,7 @@ for nu_index,nu in enumerate(nu_list):
         Xn = train_x
         train_N = len(train_index)
         test_N = len(test_index)
-
+        
         this_rmspe = mainFunc(nu,fold_num)
         rmspe_result[fold_num] = this_rmspe
     print('this nu='+str(nu)+' has mean rmspe from all folds '+str(np.mean(rmspe_result))+'\n')
@@ -177,7 +188,7 @@ for nu_index,nu in enumerate(nu_list):
     print('end of all fold for nu='+str(nu)+'\n')
     all_rmspe[:,nu_index] = rmspe_result
 
-np.save('RMSPE/OTLcircuit/GPEVI-OTL-QuadraticMean-informativePrior-mode-CVnu1.npy',all_rmspe)
+np.save('RMSPE/OTLcircuit/GPEVI-OTL-QuadraticMean-informativePrior-CVnu2.npy',all_rmspe)
 
 all_rmspe = np.mean(all_rmspe,axis=0)
 

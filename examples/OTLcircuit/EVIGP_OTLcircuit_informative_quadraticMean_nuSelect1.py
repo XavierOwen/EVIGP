@@ -1,15 +1,16 @@
 import sys
 import os
-sys.path.append('../..') # to get the models
+sys.path.append(os.path.dirname(os.path.abspath(__file__))+'\..\..')
 
 # import custom function
-from EVIGP_utils.data_gen import data_generator_borehole as data_generator
-from EVIGP_utils.gp_lnrho import GP_lnp_noninformative as GP_lnp
+from EVIGP_utils.data_gen import data_generator_OTLcircuit as data_generator
+from EVIGP_utils.gp_lnrho import GP_lnp_informative as GP_lnp
 from EVIGP_utils.utils import rmspe_sd
 from EVIGP_utils.utils import Cal_G_quadraticMean as Calc_G
 
 # import measurement function
 from EVIGP_utils.utils import handle_prediction
+from EVIGP_utils.utils import handle_beta_informative as handle_beta
 
 # basic imports from external library
 import torch
@@ -42,6 +43,9 @@ parser = argparse.ArgumentParser(description='running examples for EVIGP, exampl
 parser.add_argument('--N', type=int, help='training data size', default=200)
 parser.add_argument('--N_test', type=int, help='testing data size', default=1000)
 parser.add_argument('--epsilon',type=float, help='level of white noise', default=0.02)
+parser.add_argument('--nu',type=float, help='shrinkage coefficient, run EVIGP_BH_informative_quadraticMean_CVnuSelect1.py to get the value', default=3.82)
+parser.add_argument('--r',type=float, help='regularization constant, used in the diagonal of matrix R', default=1/3)
+
 # evi params
 parser.add_argument('--N_particle', type=int, help='particle number used in EVI', default=100)
 parser.add_argument('--TAU', type=float, help='step size used in EVI', default=0.1)
@@ -55,6 +59,9 @@ epsilon = args.epsilon
 N_particle = args.N_particle
 TAU = args.TAU
 h = torch.tensor(1)*args.h
+nu = args.nu
+r = args.r
+
 
 # parameters for priors
 a_omega = np.ones((8,2))
@@ -66,6 +73,11 @@ a_2 = 4
 x,y = data_generator(N,epsilon);
 G = Calc_G(x)
 dimx = x.shape[-1]  # Dimension of x_i
+
+R_diag = torch.ones(G.shape[1])
+R_diag[1:]      *=r
+R_diag[dimx+1:] *=r
+R_inv = torch.diag(1/R_diag)
 
 def Loss(
     y: Tensor,
@@ -88,7 +100,7 @@ def Loss(
     kxy = torch.exp(-torch.sum(diff ** 2, axis=-1) / (2 * h **2)) / torch.pow(torch.pi * 2.0 * h * h, Dim_particle / 2)  # -1 last dimension
     sumkxy = torch.sum(kxy, axis=1)  # , keepdims=True)
     diffusion_control = 1
-    Loss2 = torch.mean(torch.sum(diffusion_control*torch.log(sumkxy[:, None] / N_Particle)- GP_lnp(y, x, G, theta, a_1, a_2, a_omega)))
+    Loss2 = torch.mean(torch.sum(diffusion_control*torch.log(sumkxy[:, None] / N_Particle)- GP_lnp(y, x, G, theta, a_1, a_2, a_omega, nu, R_inv)))
     
     return Loss1 + Loss2
 
@@ -128,7 +140,7 @@ trainingResult_str = 'training for Borehole function, informative prior, quadrat
 )
 print(trainingResult_str)
 
-sortedlnp, indices = torch.sort((GP_lnp(y, x, G, theta, a_1, a_2, a_omega)),dim=0)
+sortedlnp, indices = torch.sort((GP_lnp(y, x, G, theta, a_1, a_2, a_omega, nu, R_inv)),dim=0)
 chosenTheta = theta[indices[-1],:]
 
 omega = chosenTheta[0, 1:]  ## 1 * dimx
@@ -136,6 +148,25 @@ eta =   chosenTheta[0, 0 ]
 
 # testing
 Xn = x
+beta_hat, beta_var = handle_beta(y, Xn, G, omega, eta, nu, R_inv)
+Sigma_beta = torch.diag(beta_var)
+
+var_names = ['intercept',r'$x_1$',r'$x_2$',r'$x_3$',r'$x_4$',r'$x_5$',r'$x_6$',r'$x_1x_2$',r'$x_1x_3$',r'$x_1x_4$',r'$x_1x_5$',r'$x_1x_6$',
+             r'$x_2x_3$',r'$x_2x_4$',r'$x_2x_5$',r'$x_2x_6$',r'$x_3x_4$',r'$x_3x_5$',r'$x_3x_6$',
+             r'$x_4x_5$',r'$x_4x_6$',r'$x_5x_6$',r'$x_1^2$',r'$x_2^2$',
+             r'$x_3^2$',r'$x_4^2$',r'$x_5^2$',r'$x_6^2$']
+
+fig, ax = plt.subplots(figsize=(35,8),facecolor='white')
+ax.errorbar(range(G.shape[1]), beta_hat.detach().numpy().ravel(), 1.96*np.sqrt(Sigma_beta.detach().numpy()), fmt='o', linewidth=2, capsize=6, markersize=8)
+#ax.set_xlabel('variable names')
+ax.set_ylabel(r'$\hat\beta$',rotation=0)
+ax.set_xticks(range(G.shape[1]));
+ax.set_xticklabels(var_names,rotation=-45,ha='left');
+#ax.plot(np.zeros(G.shape[1]),'--');
+ax.yaxis.grid(True)
+ax.axhline(0, linestyle='--', color='r');
+#ax.set_title(r'mean and CI of $\hat\beta$')
+plt.savefig("figs/OTLcircuit/OTL-EVIGP-QuadraticMean-mode-betaValues-nu"+str(nu)+".pdf", format="pdf", bbox_inches="tight")
 
 N_retest = 100
 Retest_result = np.zeros(N_retest)
@@ -151,5 +182,5 @@ for i in range(N_retest):
     current_test_result = rmspe_sd(pred_y,test_y)
     Retest_result[i]=current_test_result
 
-np.save('RMSPE/Borehole/GPEVI-BH-QuadraticMean-nonInformativePrior-mode.npy',Retest_result)
+np.save('RMSPE/OTLcircuit/GPEVI-OTL-QuadraticMean-informativePrior-mode-nuSelected1.npy',Retest_result)
 print('mean RMSPE',np.mean(Retest_result))

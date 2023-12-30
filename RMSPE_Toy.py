@@ -76,15 +76,18 @@ data_combined = np.vstack([
 ])
 
 method_list = [
-    r'\underline{constant, using mode}',
-    r'\underline{constant, no diffusion}',
+    r'\underline{constant, EVI-MAP}',
+    r'\underline{constant, EVI-post}',
     r'constant, gpfit',
     r'constant, laGP',
     r'constant, mlegp',
-    r'\underline{linear, using mode}',
-    r'\underline{linear, no diffusion}',
+    r'\underline{linear, EVI-MAP}',
+    r'\underline{linear, EVI-post}',
     r'linear, mlegp'
 ]
+
+for i,j in enumerate(data_combined):
+    print('method ',method_list[i],' has mean ', np.mean(j),' and standard deviation ', np.std(j))
 
 our_method_index = [0,1,5,6]
 

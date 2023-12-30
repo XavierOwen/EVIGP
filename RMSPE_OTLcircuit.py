@@ -6,60 +6,53 @@ import matplotlib
 
 import os
 
-data_constMean_mode_str = './RMSPE/Borehole/GPEVI-BH-ConstMean-nonInformativePrior-mode.npy'
-data_constMean_mlegp_str = './RMSPE/Borehole/mleGP-BH-ConstMean.csv'
-data_linearMean_mode_str = './RMSPE/Borehole/GPEVI-BH-LinearMean-nonInformativePrior-mode.npy'
-data_linearMean_mlegp_str = './RMSPE/Borehole/mleGP-BH-LinearMean.csv'
-data_quadraticMean_mode_str = './RMSPE/Borehole/GPEVI-BH-QuadraticMean-nonInformativePrior-mode.npy'
-data_quadraticMean_mlegp_str = './RMSPE/Borehole/mleGP-BH-QuadraticMean.csv'
+data_constMean_mode_str = './RMSPE/OTLcircuit/GPEVI-OTL-ConstMean-nonInformativePrior-mode.npy'
+data_constMean_mlegp_str = './RMSPE/OTLcircuit/mleGP-OTL-ConstMean.csv'
+data_linearMean_mode_str = './RMSPE/OTLcircuit/GPEVI-OTL-LinearMean-nonInformativePrior-mode.npy'
+data_linearMean_mlegp_str = './RMSPE/OTLcircuit/mleGP-OTL-LinearMean.csv'
+data_quadraticMean_mlegp_str = './RMSPE/OTLcircuit/mleGP-OTL-QuadraticMean.csv'
 
-data_QuadraticMeanQuadraticMean_mode_str1 = './RMSPE/Borehole/GPEVI-BH-QuadraticMean-informativePrior-mode-nuSelected1.npy'
-data_QuadraticMeanQuadraticMean_mode_str2 = './RMSPE/Borehole/GPEVI-BH-QuadraticMean-informativePrior-mode-nuSelected2.npy'
+data_QuadraticMeanQuadraticMean_mode_str1 = './RMSPE/OTLcircuit/GPEVI-OTL-QuadraticMean-informativePrior-mode-nuSelected1.npy'
+data_QuadraticMeanQuadraticMean_mode_str2 = './RMSPE/OTLcircuit/GPEVI-OTL-QuadraticMean-informativePrior-mode-nuSelected2.npy'
 
 # file check, and rerun
 if os.path.exists(data_constMean_mode_str):
     data_constMean_mode = np.load(data_constMean_mode_str)
 else:
-    os.system('python -m examples.Borehole.EVIGP_BH_noninformative_constMean_mode')
+    os.system('python -m examples.OTLcircuit.EVIGP_OTL_noninformative_constMean_mode')
 
 if os.path.exists(data_constMean_mlegp_str):
     data_constMean_mlegp = np.loadtxt(data_constMean_mlegp_str,skiprows=1)
 else:
-    os.system('rscript ./examples/Borehole/mleGP_BH_constMean.r')
+    os.system('rscript ./examples/OTLcircuit/mleGP_OTL_constMean.r')
 
 if os.path.exists(data_linearMean_mode_str):
     data_linearMean_mode = np.load(data_linearMean_mode_str)
 else:
-    os.system('python -m examples.Borehole.EVIGP_BH_noninformative_linearMean_mode')
+    os.system('python -m examples.OTLcircuit.EVIGP_OTL_noninformative_linearMean_mode')
     data_linearMean_mode = np.load(data_linearMean_mode_str)
 
 if os.path.exists(data_linearMean_mlegp_str):
     data_linearMean_mlegp = np.loadtxt(data_linearMean_mlegp_str,skiprows=1)
 else:
-    os.system('rscript ./examples/Borehole/mleGP_BH_linearMean.r')
+    os.system('rscript ./examples/OTLcircuit/mleGP_OTL_linearMean.r')
     data_linearMean_mlegp = np.loadtxt(data_linearMean_mlegp_str,skiprows=1)
-
-if os.path.exists(data_quadraticMean_mode_str):
-    data_quadraticMean_mode = np.load(data_quadraticMean_mode_str)
-else:
-    os.system('python -m examples.Borehole.EVIGP_BH_noninformative_quadraticMean_mode')
-    data_quadraticMean_mode = np.load(data_quadraticMean_mode_str)
 
 if os.path.exists(data_quadraticMean_mlegp_str):
     data_quadraticMean_mlegp = np.loadtxt(data_quadraticMean_mlegp_str,skiprows=1)
 else:
-    os.system('rscript ./examples/Borehole/mleGP_BH_quadraticMean.r')
+    os.system('rscript ./examples/OTLcircuit/mleGP_OTL_quadraticMean.r')
     data_quadraticMean_mlegp = np.loadtxt(data_quadraticMean_mlegp_str,skiprows=1)
 
 if os.path.exists(data_QuadraticMeanQuadraticMean_mode_str1):
     data_QuadraticMeanQuadraticMean_mode_1 = np.load(data_QuadraticMeanQuadraticMean_mode_str1)
 else:
-    os.system('python -m examples.Borehole.EVIGP_BH_noninformative_quadraticMean_nuSelected1')
+    os.system('python -m examples.OTLcircuit.EVIGP_OTL_noninformative_quadraticMean_nuSelected1')
     data_QuadraticMeanQuadraticMean_mode_1 = np.load(data_QuadraticMeanQuadraticMean_mode_str1)
 if os.path.exists(data_QuadraticMeanQuadraticMean_mode_str2):
     data_QuadraticMeanQuadraticMean_mode_2 = np.load(data_QuadraticMeanQuadraticMean_mode_str2)
 else:
-    os.system('python -m examples.Borehole.EVIGP_BH_noninformative_quadraticMean_nuSelected2')
+    os.system('python -m examples.OTLcircuit.EVIGP_OTL_noninformative_quadraticMean_nuSelected2')
     data_QuadraticMeanQuadraticMean_mode_2 = np.load(data_QuadraticMeanQuadraticMean_mode_str2)
 
 
@@ -106,4 +99,4 @@ ax1.grid()
 #for i in our_method_index:
 #    ax1.xaxis.get_ticklabels()[i].set_color('red')
 
-plt.savefig("./figs/Borehole/BH-RMSPE-compare.pdf", format="pdf", bbox_inches="tight")
+plt.savefig("./figs/OTLcircuit/OTL-RMSPE-compare.pdf", format="pdf", bbox_inches="tight")

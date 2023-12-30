@@ -1,10 +1,10 @@
 import sys
 import os
-sys.path.append('../..') # to get the models
+sys.path.append(os.path.dirname(os.path.abspath(__file__))+'\..\..')
 
 # import custom function
-from EVIGP_utils.data_gen import data_generator_borehole as data_generator
-from EVIGP_utils.gp_lnrho import GP_lnp_noninformative as GP_lnp
+from EVIGP_utils.data_gen import data_generator_OTLcircuit as data_generator
+from EVIGP_utils.gp_lnrho import GP_lnp_informative as GP_lnp
 from EVIGP_utils.utils import rmspe_sd
 from EVIGP_utils.utils import Cal_G_quadraticMean as Calc_G
 
@@ -42,11 +42,22 @@ parser = argparse.ArgumentParser(description='running examples for EVIGP, exampl
 parser.add_argument('--N', type=int, help='training data size', default=200)
 parser.add_argument('--N_test', type=int, help='testing data size', default=1000)
 parser.add_argument('--epsilon',type=float, help='level of white noise', default=0.02)
+parser.add_argument('--nu',type=float, help='shrinkage coefficient, run EVIGP_BH_informative_quadraticMean_CVnuSelect1.py to get the value', default=4)
+parser.add_argument('--r',type=float, help='regularization constant, used in the diagonal of matrix R', default=1/3)
+
 # evi params
 parser.add_argument('--N_particle', type=int, help='particle number used in EVI', default=100)
 parser.add_argument('--TAU', type=float, help='step size used in EVI', default=0.1)
 parser.add_argument('--h', type=float, help='kernel bandwidth used in EVI', default=0.001)
 
+
+parser.add_argument(
+  "--selected_effects",  # name on the CLI - drop the `--` for positional/required parameters
+  nargs="*",  # 0 or more values expected => creates a list
+  type=int,
+  help='index for the effects selected, starting from zero, input them like: 0 6 8 10',
+  default=[0, 2, 22],  # default if nothing is provided
+)
 args = parser.parse_args()
 
 N = args.N
@@ -55,6 +66,11 @@ epsilon = args.epsilon
 N_particle = args.N_particle
 TAU = args.TAU
 h = torch.tensor(1)*args.h
+nu = args.nu
+r = args.r
+selected_effects = args.selected_effects
+
+
 
 # parameters for priors
 a_omega = np.ones((8,2))
@@ -65,7 +81,13 @@ a_2 = 4
 # generate training data
 x,y = data_generator(N,epsilon);
 G = Calc_G(x)
+G = G[:,selected_effects]
 dimx = x.shape[-1]  # Dimension of x_i
+
+R_diag = torch.ones(G.shape[1])
+R_diag[1:]      /=r
+R_diag[dimx+1:] /=r
+R_inv = torch.diag(1/R_diag)
 
 def Loss(
     y: Tensor,
@@ -88,7 +110,7 @@ def Loss(
     kxy = torch.exp(-torch.sum(diff ** 2, axis=-1) / (2 * h **2)) / torch.pow(torch.pi * 2.0 * h * h, Dim_particle / 2)  # -1 last dimension
     sumkxy = torch.sum(kxy, axis=1)  # , keepdims=True)
     diffusion_control = 1
-    Loss2 = torch.mean(torch.sum(diffusion_control*torch.log(sumkxy[:, None] / N_Particle)- GP_lnp(y, x, G, theta, a_1, a_2, a_omega)))
+    Loss2 = torch.mean(torch.sum(diffusion_control*torch.log(sumkxy[:, None] / N_Particle)- GP_lnp(y, x, G, theta, a_1, a_2, a_omega, nu, R_inv)))
     
     return Loss1 + Loss2
 
@@ -128,7 +150,7 @@ trainingResult_str = 'training for Borehole function, informative prior, quadrat
 )
 print(trainingResult_str)
 
-sortedlnp, indices = torch.sort((GP_lnp(y, x, G, theta, a_1, a_2, a_omega)),dim=0)
+sortedlnp, indices = torch.sort((GP_lnp(y, x, G, theta, a_1, a_2, a_omega, nu, R_inv)),dim=0)
 chosenTheta = theta[indices[-1],:]
 
 omega = chosenTheta[0, 1:]  ## 1 * dimx
@@ -151,5 +173,5 @@ for i in range(N_retest):
     current_test_result = rmspe_sd(pred_y,test_y)
     Retest_result[i]=current_test_result
 
-np.save('RMSPE/Borehole/GPEVI-BH-QuadraticMean-nonInformativePrior-mode.npy',Retest_result)
+np.save('RMSPE/Borehole/GPEVI-OTL-QuadraticMean-informativePrior-mode-nuSelected2.npy',Retest_result)
 print('mean RMSPE',np.mean(Retest_result))

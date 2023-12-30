@@ -1,14 +1,15 @@
 import sys
+import os
 sys.path.append('../..') # to get the models
 
 # import custom function
-from utils.data_gen import data_generator_xsinx
-from utils.gp_lnrho import GP_lnp_noninformative
-from utils.utils import createMesh, Calc_y_xsinx, rmspe_sd
-from utils.utils import Cal_G_linearMean as Calc_G
+from EVIGP_utils.data_gen import data_generator_xsinx
+from EVIGP_utils.gp_lnrho import GP_lnp_noninformative
+from EVIGP_utils.utils import createMesh, Calc_y_xsinx, rmspe_sd
+from EVIGP_utils.utils import Cal_G_linearMean as Calc_G
 
 # import measurement function
-from utils.utils import handle_prediction
+from EVIGP_utils.utils import handle_prediction
 
 # basic imports from external library
 import torch

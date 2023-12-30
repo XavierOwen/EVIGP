@@ -10,7 +10,7 @@ upper<-10.
 
 p<-1
 m<-100
-n<-20
+n<-11
 
 ## Training data
 xx<-maximinLHS(n,p)
@@ -26,9 +26,11 @@ y <- y+ rnorm(n, mean = 0, sd=0.5)
 result_rmspe_sd = numeric(100)
 for (i in 1:100) {
     x.new<-randomLHS(m,p)
-    new <-lower+x.new*(upper-lower)
+    new<-matrix(0,ncol=p,nrow=m)
+    for (j in 1:m)
+        new[j,]<-lower+x.new[j,]*(upper-lower)
     truey<-new[,1]*sin(new[,1])
-    fit_g = aGP(xx, y, x.new, start = 6, end = 9, d = NULL, g = 1/10000,method = c("alc", "alcray", "mspe", "nn", "fish"), Xi.ret = TRUE, verb=0);
+    fit_g = aGP(xx, y, x.new, start = 6, end = 10, d = NULL, g = 1/10000,method = c("alc", "alcray", "mspe", "nn", "fish"), Xi.ret = TRUE, verb=0);
     pred_g <-fit_g$mean
     RMSPE_sd_g <- sqrt(mean((c(pred_g)-truey)^2))/sd(truey)
     result_rmspe_sd[i]=RMSPE_sd_g

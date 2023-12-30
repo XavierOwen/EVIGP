@@ -10,7 +10,7 @@ upper<-c(0.15,50000,115600,1110,116,820,1680,12045)
 
 p<-8
 m<-1000
-n<-160
+n<-200
 
 ## Training data
 xx<-maximinLHS(n,p)
@@ -34,7 +34,9 @@ fit_g  <- mlegp(
 result_rmspe_sd = numeric(100)
 for (i in 1:100) {
     x.new<-randomLHS(m,p)
-    new <-lower+x.new*(upper-lower)
+    new<-matrix(0,ncol=p,nrow=m)
+    for (j in 1:m)
+        new[j,]<-lower+x.new[j,]*(upper-lower)
     truey<-2*pi*new[,3]*(new[,4]-new[,6])/( log(new[,2]/new[,1])* (1+2*new[,7]*new[,3]/(log(new[,2]/new[,1])*new[,1]^2*new[,8])+new[,3]/new[,5]) )
     pred_g <-predict(fit_g,x.new)
     RMSPE_sd_g <- sqrt(mean((c(pred_g)-truey)^2))/sd(truey)  

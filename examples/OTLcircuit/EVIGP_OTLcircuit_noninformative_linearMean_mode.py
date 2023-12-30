@@ -1,12 +1,12 @@
 import sys
 import os
-sys.path.append('../..') # to get the models
+sys.path.append(os.path.dirname(os.path.abspath(__file__))+'\..\..')
 
 # import custom function
-from EVIGP_utils.data_gen import data_generator_borehole as data_generator
+from EVIGP_utils.data_gen import data_generator_OTLcircuit as data_generator
 from EVIGP_utils.gp_lnrho import GP_lnp_noninformative as GP_lnp
 from EVIGP_utils.utils import rmspe_sd
-from EVIGP_utils.utils import Cal_G_quadraticMean as Calc_G
+from EVIGP_utils.utils import Cal_G_linearMean as Calc_G
 
 # import measurement function
 from EVIGP_utils.utils import handle_prediction
@@ -122,7 +122,7 @@ for epoch in range(501):
     theta_0 = theta.detach().clone()
 
 end = time.time()
-trainingResult_str = 'training for Borehole function, informative prior, quadratic mean model ends at epoch {epoch} using {time:d} seconds'.format(
+trainingResult_str = 'training for Borehole function, noninformative prior, linear mean model ends at epoch {epoch} using {time:d} seconds'.format(
     epoch=epoch,
     time = int(end-start)
 )
@@ -151,5 +151,5 @@ for i in range(N_retest):
     current_test_result = rmspe_sd(pred_y,test_y)
     Retest_result[i]=current_test_result
 
-np.save('RMSPE/Borehole/GPEVI-BH-QuadraticMean-nonInformativePrior-mode.npy',Retest_result)
+np.save('RMSPE/OTLcircuit/GPEVI-OTL-LinearMean-nonInformativePrior-mode.npy',Retest_result)
 print('mean RMSPE',np.mean(Retest_result))

@@ -3,7 +3,7 @@ import os
 sys.path.append('../..') # to get the models
 
 # import custom function
-from EVIGP_utils.data_gen import data_generator_borehole as data_generator
+from EVIGP_utils.data_gen import data_generator_OTLcircuit as data_generator
 from EVIGP_utils.gp_lnrho import GP_lnp_noninformative as GP_lnp
 from EVIGP_utils.utils import rmspe_sd
 from EVIGP_utils.utils import Cal_G_quadraticMean as Calc_G
@@ -151,5 +151,5 @@ for i in range(N_retest):
     current_test_result = rmspe_sd(pred_y,test_y)
     Retest_result[i]=current_test_result
 
-np.save('RMSPE/Borehole/GPEVI-BH-QuadraticMean-nonInformativePrior-mode.npy',Retest_result)
+np.save('RMSPE/OTLcircuit/GPEVI-OTL-QuadraticMean-nonInformativePrior-mode.npy',Retest_result)
 print('mean RMSPE',np.mean(Retest_result))
